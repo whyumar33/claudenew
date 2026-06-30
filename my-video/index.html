@@ -3,28 +3,96 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1920, height=1080" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="./vendor/gsap.min.js"></script>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        margin: 0;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
         width: 1920px;
         height: 1080px;
         overflow: hidden;
-        background: #000;
+        background: #07080d;
       }
       body {
-        font-family: "Inter", sans-serif;
+        font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      code,
-      pre,
-      .monospace {
-        font-family: "JetBrains Mono", monospace;
+
+      /* Vignette / glow backdrop */
+      #backdrop {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(1200px 700px at 50% 46%, rgba(99, 102, 241, 0.18), rgba(7, 8, 13, 0) 70%),
+          radial-gradient(900px 900px at 50% 120%, rgba(56, 189, 248, 0.10), rgba(7, 8, 13, 0) 60%);
+      }
+
+      #lockup {
+        position: relative;
+        width: 1280px;
+        height: 520px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        will-change: transform;
+      }
+
+      /* Corner-bracket frame that "frames" the wordmark */
+      #frame {
+        position: absolute;
+        inset: 0;
+        width: 1280px;
+        height: 520px;
+        pointer-events: none;
+      }
+      #frame path {
+        fill: none;
+        stroke: #6366f1;
+        stroke-width: 5;
+        stroke-linecap: round;
+        filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.55));
+      }
+
+      .word {
+        display: flex;
+        font-weight: 800;
+        font-size: 150px;
+        letter-spacing: -4px;
+        line-height: 1;
+      }
+      .letter {
+        display: inline-block;
+        will-change: transform, filter, opacity;
+      }
+      .ink { color: #f5f6ff; }
+      .accent {
+        background: linear-gradient(95deg, #818cf8 0%, #38bdf8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      /* Accent underline sweep */
+      #underline {
+        margin-top: 26px;
+        width: 560px;
+        height: 5px;
+        border-radius: 5px;
+        background: linear-gradient(90deg, #818cf8, #38bdf8);
+        transform-origin: left center;
+        box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
+      }
+
+      #tagline {
+        margin-top: 34px;
+        font-size: 34px;
+        font-weight: 500;
+        letter-spacing: 7px;
+        text-transform: uppercase;
+        color: rgba(226, 232, 240, 0.72);
+        will-change: transform, opacity;
       }
     </style>
   </head>
@@ -33,26 +101,99 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="10"
+      data-duration="5"
       data-width="1920"
       data-height="1080"
     >
-      
-      
+      <div id="backdrop" class="clip" data-start="0" data-duration="5" data-track-index="0"></div>
 
-      <!--
-        Add your clips here. Example:
-        <div id="title" class="clip" data-start="0" data-duration="5" data-track-index="1"
-             style="font-size: 64px; color: #fff; padding: 40px">
-          Hello World
+      <div id="lockup" class="clip" data-start="0" data-duration="5" data-track-index="1">
+        <!-- Corner brackets that draw on to frame the wordmark -->
+        <svg id="frame" viewBox="0 0 1280 520" preserveAspectRatio="none">
+          <path class="corner" d="M 30 150 L 30 30 L 150 30" />
+          <path class="corner" d="M 1130 30 L 1250 30 L 1250 150" />
+          <path class="corner" d="M 1250 370 L 1250 490 L 1130 490" />
+          <path class="corner" d="M 150 490 L 30 490 L 30 370" />
+        </svg>
+
+        <div class="word">
+          <span class="letter ink">H</span><span class="letter ink">y</span><span class="letter ink">p</span><span class="letter ink">e</span><span class="letter ink">r</span><span class="letter accent">F</span><span class="letter accent">r</span><span class="letter accent">a</span><span class="letter accent">m</span><span class="letter accent">e</span><span class="letter accent">s</span>
         </div>
-      -->
+
+        <div id="underline"></div>
+
+        <div id="tagline">Video, rendered from HTML</div>
+      </div>
     </div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      // Example: tl.from("#title", { opacity: 0, y: -50, duration: 1 }, 0);
+
+      // --- Deterministic initial states ---
+      gsap.set("#lockup", { transformOrigin: "50% 50%" });
+      gsap.set(".corner", (i, el) => {
+        const len = el.getTotalLength();
+        return { strokeDasharray: len, strokeDashoffset: len };
+      });
+      gsap.set(".letter", { opacity: 0, yPercent: 60, filter: "blur(16px)" });
+      gsap.set("#underline", { scaleX: 0 });
+      gsap.set("#tagline", { opacity: 0, y: 18, letterSpacing: "18px" });
+
+      // 0.00s  corner frame draws on
+      tl.to(".corner", {
+        strokeDashoffset: 0,
+        duration: 0.9,
+        ease: "power2.inOut",
+        stagger: 0.08,
+      }, 0.0);
+
+      // 0.35s  wordmark letters resolve (blur + rise, staggered)
+      tl.to(".letter", {
+        opacity: 1,
+        yPercent: 0,
+        filter: "blur(0px)",
+        duration: 0.7,
+        ease: "power3.out",
+        stagger: 0.045,
+      }, 0.35);
+
+      // 1.25s  accent bloom on the "Frames" half
+      tl.to(".accent", {
+        textShadow: "0 0 38px rgba(56,189,248,0.85)",
+        duration: 0.45,
+        yoyo: true,
+        repeat: 1,
+        ease: "sine.inOut",
+      }, 1.25);
+
+      // 1.35s  underline sweep
+      tl.to("#underline", {
+        scaleX: 1,
+        duration: 0.6,
+        ease: "power3.inOut",
+      }, 1.35);
+
+      // 1.60s  tagline settles in
+      tl.to("#tagline", {
+        opacity: 1,
+        y: 0,
+        letterSpacing: "7px",
+        duration: 0.8,
+        ease: "power2.out",
+      }, 1.6);
+
+      // 2.00s → 5s  whole lockup holds with a slow breath
+      tl.to("#lockup", {
+        scale: 1.018,
+        duration: 1.5,
+        yoyo: true,
+        repeat: 1,
+        ease: "sine.inOut",
+      }, 2.0);
+
+      // Deterministic seek-safe baseline
+      tl.seek(0);
       window.__timelines["main"] = tl;
     </script>
   </body>
