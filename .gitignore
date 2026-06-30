@@ -1,0 +1,13 @@
+# Fetched HyperFrames / agent skill cache — large, reproducible from skills-lock.json
+# Restore with: npx skills install   (or: hyperframes init)
+.agents/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Renders / build output
+*.mp4
+*.webm
+*.mov
+dist/
